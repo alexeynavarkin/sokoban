@@ -1,4 +1,4 @@
-from . import level
+from .level import Level
 
 class LevelManager():
     """
