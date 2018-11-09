@@ -46,6 +46,11 @@ class Level(Sequence):
                 pos < 0 or pos >= self.width or cell_val == 3:
             return False
 
+    def _rec_cell(self, line, pos):
+        if self._data[line][pos] == 4:
+            return 4
+        return 0
+
     def _move(self, d_line, d_pos):
         line, pos = self._player_pos
         dest_line, dest_pos = line + d_line, pos + d_pos
@@ -57,7 +62,7 @@ class Level(Sequence):
         if dest_cell == 0 or dest_cell == 4:
             self._save()
             self._cur[dest_line][dest_pos] = 1
-            self._cur[line][pos] = 0
+            self._cur[line][pos] = self._rec_cell(line, pos)
             self._player_pos = (dest_line, dest_pos)
             return True
 
@@ -70,7 +75,7 @@ class Level(Sequence):
             self._save()
             self._cur[next_line][next_pos] = 2
             self._cur[dest_line][dest_pos] = 1
-            self._cur[line][pos] = 0
+            self._cur[line][pos] = self._rec_cell(line, pos)
             self._player_pos = (dest_line, dest_pos)
             return True
 
@@ -98,7 +103,7 @@ class Level(Sequence):
         for line in range(len(self._data)):
             while 4 in self._data[line]:
                 target_ind = self._data[line].index(4)
-                if self._cur[line][target_ind] != 4:
+                if self._cur[line][target_ind] != 2:
                     return False
         return True
 
