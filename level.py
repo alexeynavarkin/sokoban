@@ -37,6 +37,7 @@ class Level(Sequence):
         for line in range(len(self._cur)):
             if 1 in self._cur[line]:
                 return line, self._cur[line].index(1)
+        raise ValueError('Wrong data')
 
     def _save(self):
         self._history.append(deepcopy(self._cur))
@@ -45,6 +46,7 @@ class Level(Sequence):
         if line < 0 or line >= self.height or \
                 pos < 0 or pos >= self.width or cell_val == 3:
             return False
+        return True
 
     def _rec_cell(self, line, pos):
         if self._data[line][pos] == 4:
