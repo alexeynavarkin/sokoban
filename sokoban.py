@@ -19,6 +19,8 @@ class Sokoban:
                 break
             elif event == '^C':
                 break
+            elif event == 'KEY_UP':
+                lev
 
     def run(self):
         self._mainWin = curses.initscr()
