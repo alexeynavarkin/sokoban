@@ -6,20 +6,20 @@ class Level(Sequence):
     """
         Level class(moves, history, state)
     """
-    def __init__(self, name, data: list):
-        self._height = len(data)
-        self._width = len(data[0])
+    def __init__(self, name, data, height, width):
+        self._height = height
+        self._width = width
         self._name = name
         self._data = tuple(deepcopy(data))
-        self._cur = deepcopy(data)
+        self._cur = list(deepcopy(data))
         self._player_pos = self._find_player_pos()
         self._history = []
 
     def __getitem__(self, item):
-        return self._data[item]
+        return self._cur[item]
 
     def __len__(self):
-        return len(self._data)
+        return len(self._cur)
 
     @property
     def name(self):
@@ -103,10 +103,11 @@ class Level(Sequence):
 
     def is_win(self):
         for line in range(len(self._data)):
-            while 4 in self._data[line]:
-                target_ind = self._data[line].index(4)
-                if self._cur[line][target_ind] != 2:
-                    return False
+            for sum in range(len(self._data[line])):
+                if self._data[line][sum] == 4:
+                    if self._cur[line][sum] != 2:
+                        return False
+        self._history.clear()
         return True
 
     def restart(self):
