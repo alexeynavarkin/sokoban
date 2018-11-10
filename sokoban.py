@@ -114,9 +114,6 @@ class Sokoban():
             else:
                 if result == 1:
                     self._mainWin.addstr(1, 0, "GOT WIN")
-                    self._mainWin.refresh()
-                    with open('log.txt', 'a') as f:
-                        f.write(str(score) + '\n')
                     sleep(2)
                 elif result == -1:
                     self._mainWin.addstr(1, 0, "GOT QUIT CMD")
