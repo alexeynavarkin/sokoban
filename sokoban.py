@@ -2,6 +2,7 @@ import curses
 from time import sleep
 from level import Level
 from levelmanager import LevelManager
+import platform
 
 
 class Sokoban():
@@ -9,14 +10,19 @@ class Sokoban():
         Sokoban class main game
     """
     def __init__(self):
-        self.BOX = "💩 "
-        self.HER = "😐 "
         self.OBS = "██"
         self.EMP = "  "
-        self.DES = "🚽 "
+        if "microsoft" in platform.uname()[3].lower():
+            self.HER = "\u263A "
+            self.BOX = "\u25CB "
+            self.DES = "\u25D9 "
+        else:
+            self.BOX = "💩 "
+            self.HER = "😐 "
+            self.DES = "🚽 "
 
     def loop(self):
-        while(True):
+        while True:
             self.draw_level()
             event = self._mainWin.getkey()
 
@@ -33,13 +39,12 @@ class Sokoban():
             elif event == 'r':
                 self._level.restart()
             elif event == 'n':
-                return 0
+                return 0, 0
             elif event == 'q':
-                return -1
+                return -1, 0
 
             if self._level.is_win():
-                return 1
-
+                return 1, self._level.score
 
     def draw_level(self):
         c_y = 3
@@ -100,7 +105,7 @@ class Sokoban():
             sleep(1)
 
             try:
-                result = self.loop()
+                result, score = self.loop()
             except Exception as e:
                 self._mainWin.addstr(1, 0, f"EXCEPTION OCCURED: {e}")
                 self._mainWin.refresh()
@@ -110,6 +115,8 @@ class Sokoban():
                 if result == 1:
                     self._mainWin.addstr(1, 0, "GOT WIN")
                     self._mainWin.refresh()
+                    with open('log.txt', 'a') as f:
+                        f.write(str(score) + '\n')
                     sleep(2)
                 elif result == -1:
                     self._mainWin.addstr(1, 0, "GOT QUIT CMD")

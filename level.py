@@ -14,6 +14,8 @@ class Level(Sequence):
         self._cur = list(deepcopy(data))
         self._player_pos = self._find_player_pos()
         self._history = []
+        self._moves = 0
+        self._score = 0
 
     def __getitem__(self, item):
         return self._cur[item]
@@ -33,6 +35,14 @@ class Level(Sequence):
     def height(self):
         return self._height
 
+    @property
+    def score(self):
+        return self._score
+
+    def _success_move(self):
+        self._moves += 1
+        return True
+
     def _find_player_pos(self):
         for line in range(len(self._cur)):
             if 1 in self._cur[line]:
@@ -41,6 +51,17 @@ class Level(Sequence):
 
     def _save(self):
         self._history.append(deepcopy(self._cur))
+
+    def _count_targets(self):
+        counter = 0
+        for line in self._data:
+            counter += line.count(4)
+        return counter
+
+    def _count_score(self):
+        targets = self._count_targets()
+        self._score = max(self.width * self.height * targets - 10 * self._moves,
+                          100 * targets)
 
     def _check_cell(self, line, pos, cell_val):
         if line < 0 or line >= self.height or \
@@ -66,7 +87,7 @@ class Level(Sequence):
             self._cur[dest_line][dest_pos] = 1
             self._cur[line][pos] = self._rec_cell(line, pos)
             self._player_pos = (dest_line, dest_pos)
-            return True
+            return self._success_move()
 
         if dest_cell == 2:
             next_line, next_pos = dest_line + d_line, dest_pos + d_pos
@@ -79,7 +100,7 @@ class Level(Sequence):
             self._cur[dest_line][dest_pos] = 1
             self._cur[line][pos] = self._rec_cell(line, pos)
             self._player_pos = (dest_line, dest_pos)
-            return True
+            return self._success_move()
 
     def move_up(self):
         return self._move(-1, 0)
@@ -99,14 +120,16 @@ class Level(Sequence):
         self._cur = deepcopy(self._history[-1])
         self._player_pos = self._find_player_pos()
         del self._history[-1]
+        self._moves -= 1
         return True
 
     def is_win(self):
         for line in range(len(self._data)):
-            for sum in range(len(self._data[line])):
-                if self._data[line][sum] == 4:
-                    if self._cur[line][sum] != 2:
+            for pos in range(len(self._data[line])):
+                if self._data[line][pos] == 4:
+                    if self._cur[line][pos] != 2:
                         return False
+        self._count_score()
         self._history.clear()
         return True
 
@@ -114,4 +137,5 @@ class Level(Sequence):
         self._cur = deepcopy(self._data)
         self._player_pos = self._find_player_pos()
         self._history.clear()
+        self._moves = self._score = 0
         return True
