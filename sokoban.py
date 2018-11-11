@@ -9,21 +9,20 @@ class Sokoban():
     """
         Sokoban class main game
     """
-    def __init__(self):
-        self.OBS = "██"
-        self.EMP = "  "
-        if "microsoft" in platform.uname()[3].lower():
-            self.HER = "\u263A "
-            self.BOX = "\u25CB "
-            self.DES = "\u25D9 "
-        else:
-            self.BOX = "💩 "
-            self.HER = "😐 "
-            self.DES = "🚽 "
+    OBS = "██"
+    EMP = "  "
+    if "microsoft" in platform.uname()[3].lower():
+        HER = "\u263A "
+        BOX = "\u25CB "
+        DES = "\u25D9 "
+    else:
+        BOX = "💩 "
+        HER = "😐 "
+        DES = "🚽 "
 
     def loop(self):
+        self.draw_level()
         while True:
-            self.draw_level()
             event = self._mainWin.getkey()
 
             if   event == 'KEY_UP':
@@ -43,6 +42,8 @@ class Sokoban():
             elif event == 'q':
                 return -1, 0
 
+            self.draw_level()
+
             if self._level.is_win():
                 return 1, self._level.score
 
@@ -54,15 +55,15 @@ class Sokoban():
                 c_sumbol = "  "
 
                 if symbol == 0:
-                    c_sumbol = self.EMP
+                    c_sumbol = Sokoban.EMP
                 elif symbol == 1:
-                    c_sumbol = self.HER
+                    c_sumbol = Sokoban.HER
                 elif symbol == 2:
-                    c_sumbol = self.BOX
+                    c_sumbol = Sokoban.BOX
                 elif symbol == 3:
-                    c_sumbol = self.OBS
+                    c_sumbol = Sokoban.OBS
                 elif symbol == 4:
-                    c_sumbol = self.DES
+                    c_sumbol = Sokoban.DES
 
                 self._mainWin.refresh()
                 self._mainWin.addstr(0, 0, f"   DRAW {symbol} AT ({c_y},{c_x})   ")
@@ -83,7 +84,7 @@ class Sokoban():
         self._levelManager = LevelManager()
         self._levelManager.load_levels()
 
-        self._mainWin.addstr(1, 0, str(len(self._levelManager)))
+        self._mainWin.addstr(1, 0, f"Loaded from disk {len(self._levelManager)} levels.")
         self._mainWin.refresh()
         sleep(2)
 
