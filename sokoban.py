@@ -7,7 +7,7 @@ import platform
 class Sokoban():
     """
         Sokoban class main game
-        TODO: make method to show window with custom message
+        TODO: make method to show centered window with custom message
     """
     OBS = "██"
     EMP = "  "
@@ -25,10 +25,15 @@ class Sokoban():
         tar_x = (tar_x - len(str)) // 2
         win.addstr(y, tar_x, str)
 
-    def win(self, result, score):
+    def add_subpad_centered_yx(self, win, lines, cols):
+        tar_y, tar_x = win.getmaxyx()
+        tar_y = (tar_y - lines) // 2
+        tar_x = (tar_x - cols) // 2
+        return win.subpad(lines, cols, tar_y, tar_x)
+
+    def win(self, score):
         self._mainWin.clear()
-        max_y, max_x = self._mainWin.getmaxyx()
-        sub_pad = self._mainWin.subpad(5,20,max_y//2-1,max_x//2-10)
+        sub_pad = self.add_subpad_centered_yx(self._mainWin, 5, 20)
         sub_pad.box()
         curses.flash()
         sleep(0.1)
@@ -44,8 +49,7 @@ class Sokoban():
 
     def skip(self):
         self._mainWin.clear()
-        max_y, max_x = self._mainWin.getmaxyx()
-        sub_pad = self._mainWin.subpad(5, 20, max_y // 2 - 1, max_x // 2 - 10)
+        sub_pad = self.add_subpad_centered_yx(self._mainWin, 5, 20)
         sub_pad.box()
         self.add_str_centered_x(sub_pad, 1, "LEVEL SKIPPED ;(")
         self.add_str_centered_x(sub_pad, 2, "Score: 0")
@@ -54,8 +58,7 @@ class Sokoban():
 
     def quit(self):
         self._mainWin.clear()
-        max_y, max_x = self._mainWin.getmaxyx()
-        sub_pad = self._mainWin.subpad(5, 20, max_y // 2 - 1, max_x // 2 - 10)
+        sub_pad = self.add_subpad_centered_yx(self._mainWin, 5, 20)
         sub_pad.box()
         self.add_str_centered_x(sub_pad, 2, "See you soon:)")
         # sub_pad.addstr(2, 4, "Scored: 0") # maybe add skored by session?
@@ -134,10 +137,7 @@ class Sokoban():
 
             self._level = level
 
-            gameWinY = max_y // 2 - level.height
-            gameWinX = max_x // 2 - level.width
-
-            self._gameWin = self._mainWin.subpad(level.height+6, level.width*2+6, gameWinY, gameWinX-3)
+            self._gameWin = self.add_subpad_centered_yx(self._mainWin,level.height+6, level.width*2+6)
             self._gameWin.border()
 
             try:
@@ -151,7 +151,7 @@ class Sokoban():
                 if not result:
                     self.skip()
                 elif result == 1:
-                    self.win(result, score)
+                    self.win(score)
                 elif result == -1:
                     self.quit()
                     break
