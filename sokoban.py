@@ -7,11 +7,11 @@ import platform
 class Sokoban():
     """
         Sokoban class main game
-        TODO: make method to show centered window with custom message
     """
     OBS = "██"
     EMP = "  "
-    if "microsoft" in platform.uname()[3].lower():
+    if ("windows" in platform.system().lower() or
+            "microsoft" in platform.uname()[3].lower()):
         HER = "\u263A "
         BOX = "\u25CB "
         DES = "\u25D9 "
@@ -20,63 +20,64 @@ class Sokoban():
         HER = "😐 "
         DES = "🚽 "
 
-    def add_str_centered_x(self, win, y, str):
+    @staticmethod
+    def show_flashes(number):
+        for itr in range(number):
+            curses.flash()
+            sleep(0.1)
+
+    @staticmethod
+    def add_str_centered_x(win, y, str):
         _, tar_x = win.getmaxyx()
         tar_x = (tar_x - len(str)) // 2
         win.addstr(y, tar_x, str)
 
-    def add_subpad_centered_yx(self, win, lines, cols):
+    @staticmethod
+    def add_subpad_centered_yx(win, lines, cols):
         tar_y, tar_x = win.getmaxyx()
         tar_y = (tar_y - lines) // 2
         tar_x = (tar_x - cols) // 2
         return win.subpad(lines, cols, tar_y, tar_x)
 
-    def show_controls(self):
+    def show_box(self, message: list, min_lines=0, min_cols=0):
         self._mainWin.clear()
-        sub_pad = self.add_subpad_centered_yx(self._mainWin, 10, 20)
+        lines = max(len(message) + 2, min_lines + 2)
+        cols = max(max([len(line) for line in message]) + 4, min_cols + 2)
+        sub_pad = self.add_subpad_centered_yx(self._mainWin, lines, cols)
         sub_pad.box()
-        self.add_str_centered_x(sub_pad, 2, "ARROWS - move")
-        self.add_str_centered_x(sub_pad, 3, "r - reload level")
-        self.add_str_centered_x(sub_pad, 4, "u - undo last move")
-        self.add_str_centered_x(sub_pad, 5, "q - quit")
-        self.add_str_centered_x(sub_pad, 6, "c - show controls")
+        for line in range(len(message)):
+            self.add_str_centered_x(sub_pad, line + 1, message[line])
         sub_pad.refresh()
-        sleep(2)
 
-    def win(self, score):
-        self._mainWin.clear()
-        sub_pad = self.add_subpad_centered_yx(self._mainWin, 5, 20)
-        sub_pad.box()
-        curses.flash()
-        sleep(0.1)
-        curses.flash()
-        sleep(0.1)
-        curses.flash()
-        sleep(0.1)
-        curses.flash()
-        self.add_str_centered_x(sub_pad, 1, "YOU WON")
-        self.add_str_centered_x(sub_pad, 2, f"Score: {score}")
-        sub_pad.refresh()
+    def show_controls(self):
+        controls = ["WELCOME TO SOKOBAN",
+                    " ",
+                    "ARROWS - move",
+                    "u - undo last move",
+                    "r - reload level",
+                    "n - skip level",
+                    "q - quit",
+                    "c - show controls",
+                    " ",
+                    "PRESS ANY KEY"]
+        self.show_box(controls)
+        self._mainWin.getkey()
+
+    def win(self, score, moves):
+        self.show_flashes(3)
+        message = ["YOU WON", f"Moves made: {moves}", f"Score: {score}"]
+        self.show_box(message)
         sleep(2)
 
     def skip(self):
-        self._mainWin.clear()
-        sub_pad = self.add_subpad_centered_yx(self._mainWin, 5, 20)
-        sub_pad.box()
-        self.add_str_centered_x(sub_pad, 1, "LEVEL SKIPPED ;(")
-        self.add_str_centered_x(sub_pad, 2, "Score: 0")
-        sub_pad.refresh()
+        message = ["LEVEL SKIPPED ;(", "Score: 0"]
+        self.show_box(message)
         sleep(2)
 
     def quit(self):
-        self._mainWin.clear()
-        sub_pad = self.add_subpad_centered_yx(self._mainWin, 5, 20)
-        sub_pad.box()
-        self.add_str_centered_x(sub_pad, 2, "See you soon:)")
-        # sub_pad.addstr(2, 4, "Scored: 0") # maybe add scored by session?
-        sub_pad.refresh()
+        message = [" ", "See you soon:)"]
+        self.show_box(message, 3)
         sleep(2)
-
 
     def loop(self):
         self.draw_level()
@@ -98,14 +99,13 @@ class Sokoban():
             elif event == 'c':
                 self.show_controls()
             elif event == 'n':
-                return 0, 0
+                return 0, 0, 0
             elif event == 'q':
-                return -1, 0
+                return -1, 0, 0
 
             self.draw_level()
-
             if self._level.is_win():
-                return 1, self._level.score
+                return 1, self._level.score, self._level.moves
 
     def draw_level(self):
         c_y = 3
@@ -153,7 +153,7 @@ class Sokoban():
             self._gameWin.border()
 
             try:
-                result, score = self.loop()
+                result, score, moves = self.loop()
             except Exception as e:
                 self._mainWin.addstr(1, 0, f"EXCEPTION OCCURED: {e}")
                 self._mainWin.refresh()
@@ -163,7 +163,7 @@ class Sokoban():
                 if not result:
                     self.skip()
                 elif result == 1:
-                    self.win(score)
+                    self.win(score, moves)
                 elif result == -1:
                     self.quit()
                     break

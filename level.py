@@ -39,6 +39,10 @@ class Level(Sequence):
     def score(self):
         return self._score
 
+    @property
+    def moves(self):
+        return self._moves
+
     def _success_move(self):
         self._moves += 1
         return True
@@ -60,8 +64,9 @@ class Level(Sequence):
 
     def _count_score(self):
         targets = self._count_targets()
-        self._score = max(self.width * self.height * targets - 10 * self._moves,
-                          100 * targets)
+        self._score = max((self.width + self.height) * 2 * targets - self._moves,
+                          50)
+        self._score *= targets
 
     def _check_cell(self, line, pos, cell_val):
         if line < 0 or line >= self.height or \
