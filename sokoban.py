@@ -2,14 +2,26 @@ import curses
 from time import sleep
 from level import Level
 from levelmanager import LevelManager
+from BaseGame import BaseGame
 import platform
 
 
-class Sokoban():
+NAME = "Sokoban"
+
+
+class Game(BaseGame):
+    def run(self):
+        game = Sokoban()
+        game.run()
+        self.add_scores(game.score)
+
+
+class Sokoban:
     """
         Sokoban class main game
     """
     def __init__(self):
+        self._score = 0
         self.OBS = "██"
         self.EMP = "  "
         if "microsoft" in platform.uname()[3].lower():
@@ -20,6 +32,10 @@ class Sokoban():
             self.BOX = "💩 "
             self.HER = "😐 "
             self.DES = "🚽 "
+
+    @property
+    def score(self):
+        return self._score
 
     def loop(self):
         while True:
@@ -114,13 +130,13 @@ class Sokoban():
             else:
                 if result == 1:
                     self._mainWin.addstr(1, 0, "GOT WIN")
+                    self._score += score
                     sleep(2)
                 elif result == -1:
                     self._mainWin.addstr(1, 0, "GOT QUIT CMD")
                     self._mainWin.refresh()
                     sleep(2)
                     break
-
 
         self._mainWin.keypad(False)
         # curses.nocbreak() # WTF
@@ -129,8 +145,11 @@ class Sokoban():
         curses.endwin()
 
 
+def main():
+    game = Sokoban()
+    game.run()
+
 
 if __name__ == "__main__":
     # wrapper need for fix terminal after failure
-    game = Sokoban()
-    game.run()
+    main()
