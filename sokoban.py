@@ -1,6 +1,5 @@
 import curses
 from time import sleep
-from level import Level
 from levelmanager import LevelManager
 import platform
 
@@ -8,6 +7,7 @@ import platform
 class Sokoban():
     """
         Sokoban class main game
+        TODO: make method to show window with custom message
     """
     OBS = "██"
     EMP = "  "
@@ -20,9 +20,13 @@ class Sokoban():
         HER = "😐 "
         DES = "🚽 "
 
+    def add_str_centered_x(self, win, y, str):
+        _, tar_x = win.getmaxyx()
+        tar_x = (tar_x - len(str)) // 2
+        win.addstr(y, tar_x, str)
+
     def win(self, result, score):
         self._mainWin.clear()
-        self._gameWin.untouchwin()
         max_y, max_x = self._mainWin.getmaxyx()
         sub_pad = self._mainWin.subpad(5,20,max_y//2-1,max_x//2-10)
         sub_pad.box()
@@ -33,18 +37,30 @@ class Sokoban():
         curses.flash()
         sleep(0.1)
         curses.flash()
-        sub_pad.addstr(1, 1, f"YOU WON! {result} {score}")
+        self.add_str_centered_x(sub_pad, 1, "YOU WON")
+        self.add_str_centered_x(sub_pad, 2, f"Score: {score}")
         sub_pad.refresh()
         sleep(2)
 
     def skip(self):
         self._mainWin.clear()
-        self._gameWin.untouchwin()
         max_y, max_x = self._mainWin.getmaxyx()
         sub_pad = self._mainWin.subpad(5, 20, max_y // 2 - 1, max_x // 2 - 10)
         sub_pad.box()
-        sub_pad.addstr(1, 1, "LEVEL SKIPPED")
+        self.add_str_centered_x(sub_pad, 1, "LEVEL SKIPPED ;(")
+        self.add_str_centered_x(sub_pad, 2, "Score: 0")
         sub_pad.refresh()
+        sleep(2)
+
+    def quit(self):
+        self._mainWin.clear()
+        max_y, max_x = self._mainWin.getmaxyx()
+        sub_pad = self._mainWin.subpad(5, 20, max_y // 2 - 1, max_x // 2 - 10)
+        sub_pad.box()
+        self.add_str_centered_x(sub_pad, 2, "See you soon:)")
+        # sub_pad.addstr(2, 4, "Scored: 0") # maybe add skored by session?
+        sub_pad.refresh()
+        sleep(2)
 
 
     def loop(self):
@@ -133,15 +149,11 @@ class Sokoban():
                 break
             else:
                 if not result:
-                    self._mainWin.addstr(1, 0, "LEVEL SKIPPED")
-                    self._mainWin.refresh()
-                    sleep(2)
+                    self.skip()
                 elif result == 1:
                     self.win(result, score)
                 elif result == -1:
-                    self._mainWin.addstr(1, 0, "GOT QUIT CMD")
-                    self._mainWin.refresh()
-                    sleep(2)
+                    self.quit()
                     break
 
         curses.noraw()
