@@ -31,6 +31,18 @@ class Sokoban():
         tar_x = (tar_x - cols) // 2
         return win.subpad(lines, cols, tar_y, tar_x)
 
+    def show_controls(self):
+        self._mainWin.clear()
+        sub_pad = self.add_subpad_centered_yx(self._mainWin, 10, 20)
+        sub_pad.box()
+        self.add_str_centered_x(sub_pad, 2, "ARROWS - move")
+        self.add_str_centered_x(sub_pad, 3, "r - reload level")
+        self.add_str_centered_x(sub_pad, 4, "u - undo last move")
+        self.add_str_centered_x(sub_pad, 5, "q - quit")
+        self.add_str_centered_x(sub_pad, 6, "c - show controls")
+        sub_pad.refresh()
+        sleep(2)
+
     def win(self, score):
         self._mainWin.clear()
         sub_pad = self.add_subpad_centered_yx(self._mainWin, 5, 20)
@@ -61,7 +73,7 @@ class Sokoban():
         sub_pad = self.add_subpad_centered_yx(self._mainWin, 5, 20)
         sub_pad.box()
         self.add_str_centered_x(sub_pad, 2, "See you soon:)")
-        # sub_pad.addstr(2, 4, "Scored: 0") # maybe add skored by session?
+        # sub_pad.addstr(2, 4, "Scored: 0") # maybe add scored by session?
         sub_pad.refresh()
         sleep(2)
 
@@ -83,6 +95,8 @@ class Sokoban():
                 self._level.undo()
             elif event == 'r':
                 self._level.restart()
+            elif event == 'c':
+                self.show_controls()
             elif event == 'n':
                 return 0, 0
             elif event == 'q':
@@ -127,9 +141,9 @@ class Sokoban():
         self._levelManager = LevelManager()
         self._levelManager.load_levels()
 
-        self._mainWin.addstr(max_y//2, max_x//2, f"Loaded from disk {len(self._levelManager)} levels.")
-        self._mainWin.refresh()
+        self.add_str_centered_x(self._mainWin, 5, f"Loaded from file {len(self._levelManager)} levels.")
         sleep(0.5)
+        self.show_controls()
 
         for level in self._levelManager:
             self._mainWin.clear()
