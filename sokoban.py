@@ -136,8 +136,6 @@ class Sokoban():
         curses.raw()
         self._mainWin.keypad(True)
 
-        max_y, max_x = self._mainWin.getmaxyx()
-
         self._levelManager = LevelManager()
         self._levelManager.load_levels()
 
@@ -177,6 +175,5 @@ class Sokoban():
 
 
 if __name__ == "__main__":
-    # wrapper need for fix terminal after failure
     game = Sokoban()
     game.run()
