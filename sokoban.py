@@ -20,6 +20,33 @@ class Sokoban():
         HER = "😐 "
         DES = "🚽 "
 
+    def win(self, result, score):
+        self._mainWin.clear()
+        self._gameWin.untouchwin()
+        max_y, max_x = self._mainWin.getmaxyx()
+        sub_pad = self._mainWin.subpad(5,20,max_y//2-1,max_x//2-10)
+        sub_pad.box()
+        curses.flash()
+        sleep(0.1)
+        curses.flash()
+        sleep(0.1)
+        curses.flash()
+        sleep(0.1)
+        curses.flash()
+        sub_pad.addstr(1, 1, f"YOU WON! {result} {score}")
+        sub_pad.refresh()
+        sleep(2)
+
+    def skip(self):
+        self._mainWin.clear()
+        self._gameWin.untouchwin()
+        max_y, max_x = self._mainWin.getmaxyx()
+        sub_pad = self._mainWin.subpad(5, 20, max_y // 2 - 1, max_x // 2 - 10)
+        sub_pad.box()
+        sub_pad.addstr(1, 1, "LEVEL SKIPPED")
+        sub_pad.refresh()
+
+
     def loop(self):
         self.draw_level()
         while True:
@@ -65,28 +92,25 @@ class Sokoban():
                 elif symbol == 4:
                     c_sumbol = Sokoban.DES
 
-                self._mainWin.refresh()
-                self._mainWin.addstr(0, 0, f"   DRAW {symbol} AT ({c_y},{c_x})   ")
                 self._gameWin.addstr(c_y, c_x, c_sumbol)
                 self._gameWin.refresh()
                 c_x += 2
             c_y += 1
-            self._gameWin.refresh()
 
     def run(self):
         self._mainWin = curses.initscr()
         curses.noecho()
         curses.raw()
-        # curses.cbreak() # WTF
         self._mainWin.keypad(True)
+
         max_y, max_x = self._mainWin.getmaxyx()
 
         self._levelManager = LevelManager()
         self._levelManager.load_levels()
 
-        self._mainWin.addstr(1, 0, f"Loaded from disk {len(self._levelManager)} levels.")
+        self._mainWin.addstr(max_y//2, max_x//2, f"Loaded from disk {len(self._levelManager)} levels.")
         self._mainWin.refresh()
-        sleep(2)
+        sleep(0.5)
 
         for level in self._levelManager:
             self._mainWin.clear()
@@ -97,13 +121,8 @@ class Sokoban():
             gameWinY = max_y // 2 - level.height
             gameWinX = max_x // 2 - level.width
 
-            self._mainWin.addstr(1, 0, level.name)
-            self._mainWin.addstr(max_y-2, 0, f"GAME_WIN:({gameWinY},{gameWinX}) ({level.height},{level.width})")
-
-            self._gameWin = self._mainWin.subwin(level.height+6, level.width*2+6, gameWinY, gameWinX)
+            self._gameWin = self._mainWin.subpad(level.height+6, level.width*2+6, gameWinY, gameWinX-3)
             self._gameWin.border()
-            self._gameWin.refresh()
-            sleep(1)
 
             try:
                 result, score = self.loop()
@@ -113,18 +132,18 @@ class Sokoban():
                 sleep(2)
                 break
             else:
-                if result == 1:
-                    self._mainWin.addstr(1, 0, "GOT WIN")
+                if not result:
+                    self._mainWin.addstr(1, 0, "LEVEL SKIPPED")
+                    self._mainWin.refresh()
                     sleep(2)
+                elif result == 1:
+                    self.win(result, score)
                 elif result == -1:
                     self._mainWin.addstr(1, 0, "GOT QUIT CMD")
                     self._mainWin.refresh()
                     sleep(2)
                     break
 
-
-        self._mainWin.keypad(False)
-        # curses.nocbreak() # WTF
         curses.noraw()
         curses.echo()
         curses.endwin()
