@@ -2,11 +2,14 @@ import curses
 from time import sleep
 from levelmanager import LevelManager
 import platform
+import threading
 
 
 class Sokoban():
     """
         Sokoban class main game
+        TODO: Fix timer window
+        TODO: Make timer count based on time.time()
     """
     OBS = "██"
     EMP = "  "
@@ -19,6 +22,25 @@ class Sokoban():
         BOX = "💩 "
         HER = "😐 "
         DES = "🚽 "
+
+    def timer_update(self):
+        self._timer += 1
+        self._timerWin.clear()
+        self._timerWin.box()
+        message = f"{self._timer//60 % 60}:{self._timer % 60}"
+        self.add_str_centered_x(self._timerWin, 1, message)
+        self._timerWin.refresh()
+
+    def show_timer(self):
+        while self.timer_active:
+            self.timer_update()
+            sleep(1)
+
+    def stop_timer(self):
+        self.timer_active = False
+        time_t = self._timer
+        self._timer = 0
+        return time_t
 
     @staticmethod
     def show_flashes(number):
@@ -36,6 +58,13 @@ class Sokoban():
     def add_subpad_centered_yx(win, lines, cols):
         tar_y, tar_x = win.getmaxyx()
         tar_y = (tar_y - lines) // 2
+        tar_x = (tar_x - cols) // 2
+        return win.subpad(lines, cols, tar_y, tar_x)
+
+    @staticmethod
+    def add_subpad_bottom_y(win, lines, cols):
+        tar_y, tar_x = win.getmaxyx()
+        tar_y = tar_y - lines - 1
         tar_x = (tar_x - cols) // 2
         return win.subpad(lines, cols, tar_y, tar_x)
 
@@ -79,11 +108,18 @@ class Sokoban():
         self.show_box(message, 3)
         sleep(2)
 
+    def timer_loop(self):
+        self._timer = 0
+        self.timer_active = True
+        timer_tread = threading.Thread(target=self.show_timer)
+        timer_tread.daemon = True
+        timer_tread.start()
+
     def loop(self):
         self.draw_level()
+        self.timer_loop()
         while True:
             event = self._mainWin.getkey()
-
             if   event == 'KEY_UP':
                 self._level.move_up()
             elif event == 'KEY_DOWN':
@@ -95,16 +131,19 @@ class Sokoban():
             elif event == 'u':
                 self._level.undo()
             elif event == 'r':
+                self._timer = 0
                 self._level.restart()
             elif event == 'c':
                 self.show_controls()
             elif event == 'n':
+                self.stop_timer()
                 return 0, 0, 0
             elif event == 'q':
+                self.stop_timer()
                 return -1, 0, 0
-
             self.draw_level()
             if self._level.is_win():
+                self.stop_timer()
                 return 1, self._level.score, self._level.moves
 
     def draw_level(self):
@@ -134,6 +173,7 @@ class Sokoban():
         self._mainWin = curses.initscr()
         curses.noecho()
         curses.raw()
+        curses.curs_set(0)
         self._mainWin.keypad(True)
 
         self._levelManager = LevelManager()
@@ -151,6 +191,9 @@ class Sokoban():
 
             self._gameWin = self.add_subpad_centered_yx(self._mainWin,level.height+6, level.width*2+6)
             self._gameWin.border()
+
+            self._timerWin = self.add_subpad_bottom_y(self._mainWin, 3, 20)
+            self._timerWin.border()
 
             try:
                 result, score, moves = self.loop()
