@@ -1,5 +1,5 @@
 import curses
-from time import sleep
+from time import sleep, time
 from levelmanager import LevelManager
 from BaseGame import BaseGame
 import platform
@@ -19,11 +19,8 @@ class Game(BaseGame):
 class Sokoban:
     """
         Sokoban class main game
-        TODO: Fix timer window
-        TODO: Make timer count based on time.time()
     """
     def __init__(self):
-        self._score = 0
         self.OBS = "██"
         self.EMP = "  "
         if "microsoft" in platform.uname()[3].lower():
@@ -34,50 +31,66 @@ class Sokoban:
             self.BOX = "💩 "
             self.HER = "😐 "
             self.DES = "🚽 "
-    OBS = "██"
-    EMP = "  "
-    if ("windows" in platform.system().lower() or
-            "microsoft" in platform.uname()[3].lower()):
-        HER = "\u263A "
-        BOX = "\u25CB "
-        DES = "\u25D9 "
-    else:
-        BOX = "💩 "
-        HER = "😐 "
-        DES = "🚽 "
+        self._score = self._timer = 0
+        self._time_start = None
+        self._timer_hold = self._game_hold = self._timer_active = False
+        self._levelManager = LevelManager()
+        self._mainWin = self._gameWin = self._timerWin = self._level = None
+
+    def time_str(self):
+        minutes = str(self._timer // 60 % 60)
+        if len(minutes) < 2:
+            minutes = "".join(("0", minutes))
+        seconds = str(self._timer % 60)
+        if len(seconds) < 2:
+            seconds = "".join(("0", seconds))
+        return f"{minutes}:{seconds}"
 
     def timer_update(self):
-        self._timer += 1
         while self._timer_hold:
             sleep(0.05)
         self._game_hold = True
+        self._timer = int(time() - self._time_start)
         self._timerWin.clear()
         self._timerWin.box()
-        message = f"{self._timer//60 % 60}:{self._timer % 60}"
-        self.add_str_centered_x(self._timerWin, 1, message)
+        self.add_str_centered_x(self._timerWin, 1, self.time_str())
         self._timerWin.refresh()
         self._game_hold = False
 
     def show_timer(self):
-        while self.timer_active:
+        while self._timer_active:
             self.timer_update()
-            sleep(1)
+            sleep(1.0)
 
     def stop_timer(self):
-        self.timer_active = False
+        self._timer_active = False
         time_t = self._timer
         self._timer = 0
+        self._time_start = None
         return time_t
 
+    def clear_timer(self):
+        self._timer = 0
+        self._timer_hold = False
+        self._game_hold = False
+        self._time_start = time()
+
+    def start_timer_loop(self):
+        self.clear_timer()
+        self._timer_active = True
+        timer_tread = threading.Thread(target=self.show_timer)
+        timer_tread.daemon = True
+        timer_tread.start()
+
     def clear_win(self, win):
-        while self._game_hold == True:
+        while self._game_hold:
             sleep(0.05)
         self._timer_hold = True
         win.clear()
         self._timer_hold = False
 
     def refresh_win(self, win):
-        while self._game_hold == True:
+        while self._game_hold:
             sleep(0.05)
         self._timer_hold = True
         win.refresh()
@@ -90,10 +103,10 @@ class Sokoban:
             sleep(0.1)
 
     @staticmethod
-    def add_str_centered_x(win, y, str):
+    def add_str_centered_x(win, y, string):
         _, tar_x = win.getmaxyx()
-        tar_x = (tar_x - len(str)) // 2
-        win.addstr(y, tar_x, str)
+        tar_x = (tar_x - len(string)) // 2
+        win.addstr(y, tar_x, string)
 
     @staticmethod
     def add_subpad_centered_yx(win, lines, cols):
@@ -109,7 +122,7 @@ class Sokoban:
         tar_x = (tar_x - cols) // 2
         return win.subpad(lines, cols, tar_y, tar_x)
 
-    def show_box(self, message: list, min_lines=0, min_cols=0, win = None):
+    def show_box(self, message: list, min_lines=0, min_cols=0, win=None):
         if win is None:
             win = self._mainWin
         self.clear_win(win)
@@ -151,48 +164,43 @@ class Sokoban:
         self.show_box(message, 3)
         sleep(2)
 
-    def timer_loop(self):
-        self._timer = 0
-        self._timer_hold = False
-        self._game_hold = False
-        self.timer_active = True
-        timer_tread = threading.Thread(target=self.show_timer)
-        timer_tread.daemon = True
-        timer_tread.start()
-
     @property
     def score(self):
         return self._score
 
     def loop(self):
-        self.timer_loop()
+        self.start_timer_loop()
         self.draw_level()
         while True:
             event = self._mainWin.getkey()
-            if   event == 'KEY_UP':
-                self._level.move_up()
+            result = False
+            if event == 'KEY_UP':
+                result = self._level.move_up()
             elif event == 'KEY_DOWN':
-                self._level.move_down()
+                result = self._level.move_down()
             elif event == 'KEY_LEFT':
-                self._level.move_left()
+                result = self._level.move_left()
             elif event == 'KEY_RIGHT':
-                self._level.move_right()
+                result = self._level.move_right()
             elif event == 'u':
-                self._level.undo()
+                result = self._level.undo()
             elif event == 'r':
-                self._timer = 0
-                self._level.restart()
+                self.clear_timer()
+                result = self._level.restart()
             elif event == 'c':
                 self.show_controls()
+                self.draw_level()
             elif event == 'n':
                 self.stop_timer()
                 return 0, 0, 0
             elif event == 'q':
                 self.stop_timer()
                 return -1, 0, 0
-            self.draw_level()
+            if result:
+                self.draw_level()
             if self._level.is_win():
-                self.stop_timer()
+                total_time = self.stop_timer()
+                self._level.time_score(total_time)
                 return 1, self._level.score, self._level.moves
 
     def draw_level(self):
@@ -222,21 +230,26 @@ class Sokoban:
             c_y += 1
         self._timer_hold = False
 
-    def run(self):
-        self._timer = 0
-        self._timer_hold = False
-        self._game_hold = False
-        self.timer_active = False
+    def new_screen(self):
         self._mainWin = curses.initscr()
         curses.noecho()
         curses.raw()
         curses.curs_set(0)
         self._mainWin.keypad(True)
 
-        self._levelManager = LevelManager()
+    @staticmethod
+    def remove_screen():
+        curses.noraw()
+        curses.echo()
+        curses.endwin()
+
+    def run(self):
+        self.new_screen()
         self._levelManager.load_levels()
 
-        self.add_str_centered_x(self._mainWin, 5, f"Loaded from file {len(self._levelManager)} levels.")
+        self.add_str_centered_x(self._mainWin, 5,
+                                "Loaded from file " +
+                                f"{len(self._levelManager)} levels.")
         sleep(0.5)
         self.show_controls()
 
@@ -245,7 +258,9 @@ class Sokoban:
             self.refresh_win(self._mainWin)
             self._level = level
 
-            self._gameWin = self.add_subpad_centered_yx(self._mainWin,level.height+6, level.width*2+6)
+            self._gameWin = self.add_subpad_centered_yx(self._mainWin,
+                                                        level.height + 6,
+                                                        level.width * 2 + 6)
             self._gameWin.border()
 
             self._timerWin = self.add_subpad_bottom_y(self._mainWin, 3, 20)
@@ -266,10 +281,7 @@ class Sokoban:
                 elif result == -1:
                     self.quit()
                     break
-
-        curses.noraw()
-        curses.echo()
-        curses.endwin()
+        self.remove_screen()
 
 
 def main():

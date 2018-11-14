@@ -16,6 +16,7 @@ class Level(Sequence):
         self._history = []
         self._moves = 0
         self._score = 0
+        self._targets = self._count_targets()
 
     def __getitem__(self, item):
         return self._cur[item]
@@ -43,6 +44,10 @@ class Level(Sequence):
     def moves(self):
         return self._moves
 
+    def time_score(self, time):
+        time_adjust = max((self._targets * 30 - time) // 10, 1)
+        self._score *= time_adjust
+
     def _success_move(self):
         self._moves += 1
         return True
@@ -63,10 +68,9 @@ class Level(Sequence):
         return counter
 
     def _count_score(self):
-        targets = self._count_targets()
-        self._score = max((self.width + self.height) * 2 * targets - self._moves,
+        self._score = max((self.width+self.height)*2*self._targets-self._moves,
                           50)
-        self._score *= targets
+        self._score *= self._targets
 
     def _check_cell(self, line, pos, cell_val):
         if line < 0 or line >= self.height or \
