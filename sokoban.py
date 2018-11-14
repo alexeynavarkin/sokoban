@@ -49,13 +49,14 @@ class Sokoban:
     def timer_update(self):
         while self._timer_hold:
             self.wait()
-        self._game_hold = True
-        self._timer = int(time() - self._time_start)
-        self._timerWin.clear()
-        self._timerWin.box()
-        self.add_str_centered_x(self._timerWin, 1, self.time_str())
-        self._timerWin.refresh()
-        self._game_hold = False
+        if self._timer_active:
+            self._game_hold = True
+            self._timer = int(time() - self._time_start)
+            self._timerWin.clear()
+            self._timerWin.box()
+            self.add_str_centered_x(self._timerWin, 1, self.time_str())
+            self._timerWin.refresh()
+            self._game_hold = False
 
     def show_timer(self):
         while self._timer_active:
