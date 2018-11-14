@@ -1,16 +1,39 @@
 import curses
 from time import sleep
 from levelmanager import LevelManager
+from BaseGame import BaseGame
 import platform
 import threading
 
 
-class Sokoban():
+NAME = "Sokoban"
+
+
+class Game(BaseGame):
+    def run(self):
+        game = Sokoban()
+        game.run()
+        self.add_scores(game.score)
+
+
+class Sokoban:
     """
         Sokoban class main game
         TODO: Fix timer window
         TODO: Make timer count based on time.time()
     """
+    def __init__(self):
+        self._score = 0
+        self.OBS = "██"
+        self.EMP = "  "
+        if "microsoft" in platform.uname()[3].lower():
+            self.HER = "\u263A "
+            self.BOX = "\u25CB "
+            self.DES = "\u25D9 "
+        else:
+            self.BOX = "💩 "
+            self.HER = "😐 "
+            self.DES = "🚽 "
     OBS = "██"
     EMP = "  "
     if ("windows" in platform.system().lower() or
@@ -137,6 +160,10 @@ class Sokoban():
         timer_tread.daemon = True
         timer_tread.start()
 
+    @property
+    def score(self):
+        return self._score
+
     def loop(self):
         self.timer_loop()
         self.draw_level()
@@ -179,15 +206,15 @@ class Sokoban():
                 c_sumbol = "  "
 
                 if symbol == 0:
-                    c_sumbol = Sokoban.EMP
+                    c_sumbol = self.EMP
                 elif symbol == 1:
-                    c_sumbol = Sokoban.HER
+                    c_sumbol = self.HER
                 elif symbol == 2:
-                    c_sumbol = Sokoban.BOX
+                    c_sumbol = self.BOX
                 elif symbol == 3:
-                    c_sumbol = Sokoban.OBS
+                    c_sumbol = self.OBS
                 elif symbol == 4:
-                    c_sumbol = Sokoban.DES
+                    c_sumbol = self.DES
 
                 self._gameWin.addstr(c_y, c_x, c_sumbol)
                 self.refresh_win(self._gameWin)
@@ -245,7 +272,11 @@ class Sokoban():
         curses.endwin()
 
 
-
-if __name__ == "__main__":
+def main():
     game = Sokoban()
     game.run()
+
+
+if __name__ == "__main__":
+    # wrapper need for fix terminal after failure
+    main()
