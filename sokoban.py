@@ -48,7 +48,7 @@ class Sokoban:
 
     def timer_update(self):
         while self._timer_hold:
-            sleep(0.05)
+            self.wait()
         self._game_hold = True
         self._timer = int(time() - self._time_start)
         self._timerWin.clear()
@@ -84,17 +84,21 @@ class Sokoban:
 
     def clear_win(self, win):
         while self._game_hold:
-            sleep(0.05)
+            self.wait()
         self._timer_hold = True
         win.clear()
         self._timer_hold = False
 
     def refresh_win(self, win):
         while self._game_hold:
-            sleep(0.05)
+            self.wait()
         self._timer_hold = True
         win.refresh()
         self._timer_hold = False
+
+    @staticmethod
+    def wait():
+        sleep(0.05)
 
     @staticmethod
     def show_flashes(number):
@@ -205,7 +209,7 @@ class Sokoban:
 
     def draw_level(self):
         while self._game_hold:
-            sleep(0.05)
+            self.wait()
         self._timer_hold = True
         c_y = 3
         for line in self._level:
