@@ -25,11 +25,15 @@ class Sokoban():
 
     def timer_update(self):
         self._timer += 1
+        while self._timer_hold:
+            sleep(0.05)
+        self._game_hold = True
         self._timerWin.clear()
         self._timerWin.box()
         message = f"{self._timer//60 % 60}:{self._timer % 60}"
         self.add_str_centered_x(self._timerWin, 1, message)
         self._timerWin.refresh()
+        self._game_hold = False
 
     def show_timer(self):
         while self.timer_active:
@@ -41,6 +45,20 @@ class Sokoban():
         time_t = self._timer
         self._timer = 0
         return time_t
+
+    def clear_win(self, win):
+        while self._game_hold == True:
+            sleep(0.05)
+        self._timer_hold = True
+        win.clear()
+        self._timer_hold = False
+
+    def refresh_win(self, win):
+        while self._game_hold == True:
+            sleep(0.05)
+        self._timer_hold = True
+        win.refresh()
+        self._timer_hold = False
 
     @staticmethod
     def show_flashes(number):
@@ -68,15 +86,17 @@ class Sokoban():
         tar_x = (tar_x - cols) // 2
         return win.subpad(lines, cols, tar_y, tar_x)
 
-    def show_box(self, message: list, min_lines=0, min_cols=0):
-        self._mainWin.clear()
+    def show_box(self, message: list, min_lines=0, min_cols=0, win = None):
+        if win is None:
+            win = self._mainWin
+        self.clear_win(win)
         lines = max(len(message) + 2, min_lines + 2)
         cols = max(max([len(line) for line in message]) + 4, min_cols + 2)
-        sub_pad = self.add_subpad_centered_yx(self._mainWin, lines, cols)
+        sub_pad = self.add_subpad_centered_yx(win, lines, cols)
         sub_pad.box()
         for line in range(len(message)):
             self.add_str_centered_x(sub_pad, line + 1, message[line])
-        sub_pad.refresh()
+        self.refresh_win(sub_pad)
 
     def show_controls(self):
         controls = ["WELCOME TO SOKOBAN",
@@ -110,14 +130,16 @@ class Sokoban():
 
     def timer_loop(self):
         self._timer = 0
+        self._timer_hold = False
+        self._game_hold = False
         self.timer_active = True
         timer_tread = threading.Thread(target=self.show_timer)
         timer_tread.daemon = True
         timer_tread.start()
 
     def loop(self):
-        self.draw_level()
         self.timer_loop()
+        self.draw_level()
         while True:
             event = self._mainWin.getkey()
             if   event == 'KEY_UP':
@@ -147,6 +169,9 @@ class Sokoban():
                 return 1, self._level.score, self._level.moves
 
     def draw_level(self):
+        while self._game_hold:
+            sleep(0.05)
+        self._timer_hold = True
         c_y = 3
         for line in self._level:
             c_x = 3
@@ -165,11 +190,16 @@ class Sokoban():
                     c_sumbol = Sokoban.DES
 
                 self._gameWin.addstr(c_y, c_x, c_sumbol)
-                self._gameWin.refresh()
+                self.refresh_win(self._gameWin)
                 c_x += 2
             c_y += 1
+        self._timer_hold = False
 
     def run(self):
+        self._timer = 0
+        self._timer_hold = False
+        self._game_hold = False
+        self.timer_active = False
         self._mainWin = curses.initscr()
         curses.noecho()
         curses.raw()
@@ -184,9 +214,8 @@ class Sokoban():
         self.show_controls()
 
         for level in self._levelManager:
-            self._mainWin.clear()
-            self._mainWin.refresh()
-
+            self.clear_win(self._mainWin)
+            self.refresh_win(self._mainWin)
             self._level = level
 
             self._gameWin = self.add_subpad_centered_yx(self._mainWin,level.height+6, level.width*2+6)
@@ -199,7 +228,7 @@ class Sokoban():
                 result, score, moves = self.loop()
             except Exception as e:
                 self._mainWin.addstr(1, 0, f"EXCEPTION OCCURED: {e}")
-                self._mainWin.refresh()
+                self.refresh_win(self._mainWin)
                 sleep(2)
                 break
             else:
