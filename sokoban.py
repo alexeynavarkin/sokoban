@@ -23,7 +23,8 @@ class Sokoban:
     def __init__(self):
         self.OBS = "██"
         self.EMP = "  "
-        if "microsoft" in platform.uname()[3].lower():
+        if ("microsoft" in platform.uname()[3].lower() or
+                "windows" in platform.system().lower()):
             self.HER = "\u263A "
             self.BOX = "\u25CB "
             self.DES = "\u25D9 "
@@ -31,9 +32,10 @@ class Sokoban:
             self.BOX = "💩 "
             self.HER = "😐 "
             self.DES = "🚽 "
-        self._score = self._timer = 0
+        self._score = self._timer = self.time_paused = 0
         self._time_start = None
         self._timer_hold = self._game_hold = self._timer_active = False
+        self._timer_running = False
         self._levelManager = LevelManager()
         self._mainWin = self._gameWin = self._timerWin = self._level = None
 
@@ -49,7 +51,7 @@ class Sokoban:
     def timer_update(self):
         while self._timer_hold:
             self.wait()
-        if self._timer_active:
+        if self._timer_running:
             self._game_hold = True
             self._timer = int(time() - self._time_start)
             self._timerWin.clear()
@@ -58,27 +60,36 @@ class Sokoban:
             self._timerWin.refresh()
             self._game_hold = False
 
+    def pause_timer(self):
+        self._timer_running = False
+        self.time_paused = time()
+
+    def resume_timer(self):
+        time_delta = time() - self.time_paused
+        self._time_start += time_delta
+        self._timer_running = True
+
     def show_timer(self):
         while self._timer_active:
             self.timer_update()
-            sleep(1.0)
+            sleep(0.5)
 
     def stop_timer(self):
-        self._timer_active = False
+        self._timer_active = self._timer_running = False
         time_t = self._timer
         self._timer = 0
         self._time_start = None
         return time_t
 
     def clear_timer(self):
-        self._timer = 0
+        self._timer = self.time_paused = 0
         self._timer_hold = False
         self._game_hold = False
         self._time_start = time()
 
     def start_timer_loop(self):
         self.clear_timer()
-        self._timer_active = True
+        self._timer_active = self._timer_running = True
         timer_tread = threading.Thread(target=self.show_timer)
         timer_tread.daemon = True
         timer_tread.start()
@@ -138,6 +149,7 @@ class Sokoban:
         for line in range(len(message)):
             self.add_str_centered_x(sub_pad, line + 1, message[line])
         self.refresh_win(sub_pad)
+        return sub_pad
 
     def show_controls(self):
         controls = ["WELCOME TO SOKOBAN",
@@ -150,8 +162,10 @@ class Sokoban:
                     "c - show controls",
                     " ",
                     "PRESS ANY KEY"]
-        self.show_box(controls)
+        control_box = self.show_box(controls)
         self._mainWin.getkey()
+        self.clear_win(control_box)
+        self.refresh_win(control_box)
 
     def win(self, score, moves):
         self.show_flashes(3)
@@ -161,13 +175,17 @@ class Sokoban:
 
     def skip(self):
         message = ["LEVEL SKIPPED ;(", "Score: 0"]
-        self.show_box(message)
+        msg_box = self.show_box(message)
         sleep(2)
+        self.clear_win(msg_box)
+        self.refresh_win(msg_box)
 
     def quit(self):
         message = [" ", "See you soon:)"]
-        self.show_box(message, 3)
+        msg_box = self.show_box(message, 3)
         sleep(2)
+        self.clear_win(msg_box)
+        self.refresh_win(msg_box)
 
     @property
     def score(self):
@@ -193,7 +211,9 @@ class Sokoban:
                 self.clear_timer()
                 result = self._level.restart()
             elif event == 'c':
+                self.pause_timer()
                 self.show_controls()
+                self.resume_timer()
                 self.draw_level()
             elif event == 'n':
                 self.stop_timer()
@@ -209,7 +229,8 @@ class Sokoban:
                 return 1, self._level.score, self._level.moves
 
     def draw_level(self):
-        self._mainWin.clear()
+        # self.clear_win(self._gameWin)
+        # self._mainWin.clear()
         while self._game_hold:
             self.wait()
         self._timer_hold = True
