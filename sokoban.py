@@ -229,8 +229,6 @@ class Sokoban:
                 return 1, self._level.score, self._level.moves
 
     def draw_level(self):
-        # self.clear_win(self._gameWin)
-        # self._mainWin.clear()
         while self._game_hold:
             self.wait()
         self._timer_hold = True
