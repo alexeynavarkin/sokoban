@@ -212,6 +212,7 @@ class Sokoban:
         while self._game_hold:
             self.wait()
         self._timer_hold = True
+        self.add_str_centered_x(self._mainWin, 2, self._level.name)
         c_y = 3
         for line in self._level:
             c_x = 3
